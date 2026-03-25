@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Рынок — StockSim{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Рынок акций</h1>
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="Поиск по тикеру или названию..." class="search-input" />
+  </div>
+</div>
+
+<div class="card">
+  <table class="data-table" id="marketTable">
+    <thead>
+      <tr>
+        <th>Тикер</th>
+        <th>Название</th>
+        <th class="right">Цена</th>
+        <th class="right">Изм. за день</th>
+        <th class="right">Действие</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in stocks %}
+      <tr class="market-row" data-ticker="{{ s.ticker }}" data-name="{{ s.name or s.ticker }}">
+        <td><span class="ticker-badge">{{ s.ticker }}</span></td>
+        <td class="stock-name">{{ s.name or s.ticker }}</td>
+        <td class="right price-cell">
+          {% if s.price %}
+            ${{ '{:,.2f}'.format(s.price) }}
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td class="right">
+          {% if s.change_pct is not none %}
+            <span class="{{ 'positive' if s.change_pct >= 0 else 'negative' }}">
+              {{ '+' if s.change_pct >= 0 else '' }}{{ '{:.2f}'.format(s.change_pct) }}%
+            </span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td class="right">
+          {% if s.price %}
+            <button class="btn-buy"
+              data-ticker="{{ s.ticker }}"
+              data-name="{{ s.name or s.ticker }}"
+              data-price="{{ s.price }}"
+              onclick="openBuyModal(this)">
+              Купить
+            </button>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('searchInput').addEventListener('input', function () {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.market-row').forEach(function (row) {
+    const ticker = row.dataset.ticker.toLowerCase();
+    const name = row.dataset.name.toLowerCase();
+    row.style.display = (ticker.includes(q) || name.includes(q)) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

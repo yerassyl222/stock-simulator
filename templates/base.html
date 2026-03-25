@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}StockSim{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<nav class="navbar">
+  <a href="{{ url_for('dashboard') }}" class="nav-logo">
+    <span class="logo-icon">&#9650;</span> StockSim
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Портфель</a>
+    <a href="{{ url_for('market') }}" class="nav-link {% if request.endpoint == 'market' %}active{% endif %}">Рынок</a>
+    <a href="{{ url_for('portfolio') }}" class="nav-link {% if request.endpoint == 'portfolio' %}active{% endif %}">Позиции</a>
+    <a href="{{ url_for('leaderboard') }}" class="nav-link {% if request.endpoint == 'leaderboard' %}active{% endif %}">Рейтинг</a>
+  </div>
+  <div class="nav-user">
+    <span class="nav-username">{{ current_user.username }}</span>
+    <a href="{{ url_for('logout') }}" class="btn-logout">Выйти</a>
+  </div>
+  <button class="nav-burger" id="navBurger">&#9776;</button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="{{ url_for('dashboard') }}">Портфель</a>
+  <a href="{{ url_for('market') }}">Рынок</a>
+  <a href="{{ url_for('portfolio') }}">Позиции</a>
+  <a href="{{ url_for('leaderboard') }}">Рейтинг</a>
+  <a href="{{ url_for('logout') }}">Выйти</a>
+</div>
+{% endif %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+    <div class="flash flash-{{ cat }}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<main class="main-content">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Trade Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <h2 class="modal-title" id="modalTitle">Купить акции</h2>
+    <div class="modal-info">
+      <div class="modal-row">
+        <span class="label">Акция</span>
+        <span id="modalName" class="value"></span>
+      </div>
+      <div class="modal-row">
+        <span class="label">Цена</span>
+        <span id="modalPrice" class="value"></span>
+      </div>
+      <div class="modal-row" id="modalAvailRow">
+        <span class="label" id="modalAvailLabel">Доступно</span>
+        <span id="modalAvail" class="value"></span>
+      </div>
+    </div>
+    <div class="modal-form">
+      <label for="modalShares">Количество акций</label>
+      <input type="number" id="modalShares" min="0.01" step="0.01" placeholder="0" />
+      <div class="modal-total">
+        Итого: <strong id="modalTotal">$0.00</strong>
+      </div>
+      <button class="btn-primary" id="modalSubmit">Подтвердить</button>
+    </div>
+    <div class="modal-msg" id="modalMsg"></div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
