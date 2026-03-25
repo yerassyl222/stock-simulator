@@ -124,7 +124,7 @@ def ensure_prices_loaded():
     """On startup: fetch prices only if DB has fewer than 10 cached entries."""
     conn = get_connection()
     try:
-        count = conn.execute('SELECT COUNT(*) FROM stock_prices').fetchone()[0]
+        count = conn.execute('SELECT COUNT(*) AS cnt FROM stock_prices').fetchone()['cnt']
     finally:
         conn.close()
 

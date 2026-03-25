@@ -1,6 +1,22 @@
 import json
 from datetime import datetime, timedelta
 
+
+def _parse_dt(value):
+    """Parse a timestamp that is either a string (SQLite) or datetime (PostgreSQL)."""
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    return value  # already a datetime object from psycopg2
+
+
+def _fmt_dt(value):
+    """Format a timestamp for chart labels — works for both backends."""
+    if isinstance(value, str):
+        return value[:16].replace('T', ' ')
+    if value is not None:
+        return value.strftime('%Y-%m-%d %H:%M')
+    return ''
+
 from flask import Flask, render_template, redirect, url_for, request, jsonify, flash
 from flask_login import (
     LoginManager, login_user, logout_user,
@@ -193,7 +209,7 @@ def dashboard():
     should_record = True
     if last:
         try:
-            last_dt = datetime.fromisoformat(last['created_at'])
+            last_dt = _parse_dt(last['created_at'])
             if datetime.now() - last_dt < timedelta(hours=1):
                 should_record = False
         except Exception:
@@ -209,7 +225,7 @@ def dashboard():
     ).fetchall()
     history = list(reversed(history))
 
-    chart_labels = [h['created_at'][:16].replace('T', ' ') for h in history]
+    chart_labels = [_fmt_dt(h['created_at']) for h in history]
     chart_data = [round(h['total_value'], 2) for h in history]
 
     if not chart_data:
