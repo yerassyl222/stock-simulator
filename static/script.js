@@ -53,8 +53,8 @@ function openBuyModal(btn) {
   _ticker = btn.dataset.ticker;
   _price  = parseFloat(btn.dataset.price);
 
-  modalTitle.textContent = 'Купить акции';
-  modalSubmit.textContent = 'Купить';
+  modalTitle.textContent = 'Buy Shares';
+  modalSubmit.textContent = 'Buy';
   modalSubmit.style.background = 'var(--green)';
 
   modalName.textContent  = btn.dataset.name + ' (' + _ticker + ')';
@@ -67,7 +67,7 @@ function openBuyModal(btn) {
     .catch(() => {});
 
   // We'll get cash dynamically — read from nav or just leave it dynamic
-  modalAvailLabel.textContent = 'Доступно наличных';
+  modalAvailLabel.textContent = 'Available cash';
   modalAvailEl.textContent = '...';
   fetch('/api/prices').then(r => r.json()).then(() => {
     // cash info comes from the last successful response; just keep blank for now
@@ -89,15 +89,15 @@ function openSellModal(btn) {
   _price  = parseFloat(btn.dataset.price);
   _maxShares = parseFloat(btn.dataset.shares);
 
-  modalTitle.textContent = 'Продать акции';
-  modalSubmit.textContent = 'Продать';
+  modalTitle.textContent = 'Sell Shares';
+  modalSubmit.textContent = 'Sell';
   modalSubmit.style.background = 'var(--red)';
 
   modalName.textContent  = btn.dataset.name + ' (' + _ticker + ')';
   modalPriceEl.textContent = '$' + _price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-  modalAvailLabel.textContent = 'У вас акций';
-  modalAvailEl.textContent = _maxShares.toLocaleString('en-US', {maximumFractionDigits: 4}) + ' шт.';
+  modalAvailLabel.textContent = 'Shares owned';
+  modalAvailEl.textContent = _maxShares.toLocaleString('en-US', {maximumFractionDigits: 4}) + ' shares';
 
   openModal();
 }
@@ -128,16 +128,16 @@ if (modalSubmit) {
   modalSubmit.addEventListener('click', function () {
     const shares = parseFloat(modalSharesInput.value);
     if (!shares || shares <= 0) {
-      setModalMsg('Введите корректное количество акций.', 'error');
+      setModalMsg('Please enter a valid number of shares.', 'error');
       return;
     }
     if (_mode === 'sell' && shares > _maxShares) {
-      setModalMsg('Нельзя продать больше, чем у вас есть (' + _maxShares.toLocaleString('en-US', {maximumFractionDigits: 4}) + ' шт.).', 'error');
+      setModalMsg('Cannot sell more than you own (' + _maxShares.toLocaleString('en-US', {maximumFractionDigits: 4}) + ' shares).', 'error');
       return;
     }
 
     modalSubmit.disabled = true;
-    setModalMsg('Обработка...', '');
+    setModalMsg('Processing...', '');
 
     const endpoint = _mode === 'buy' ? '/api/buy' : '/api/sell';
 
@@ -156,12 +156,12 @@ if (modalSubmit) {
             location.reload();
           }, 1200);
         } else {
-          setModalMsg(data.error || 'Произошла ошибка.', 'error');
+          setModalMsg(data.error || 'An error occurred.', 'error');
           modalSubmit.disabled = false;
         }
       })
       .catch(() => {
-        setModalMsg('Ошибка сети. Попробуйте ещё раз.', 'error');
+        setModalMsg('Network error. Please try again.', 'error');
         modalSubmit.disabled = false;
       });
   });

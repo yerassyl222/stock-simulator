@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Рейтинг — StockSim{% endblock %}
+{% block title %}Leaderboard — StockSim{% endblock %}
 
 {% block content %}
 <div class="page-header">
-  <h1>Таблица лидеров</h1>
+  <h1>Leaderboard</h1>
 </div>
 
 <div class="card">
@@ -11,11 +11,11 @@
     <thead>
       <tr>
         <th class="center">#</th>
-        <th>Участник</th>
-        <th class="right">Стартовый баланс</th>
-        <th class="right">Текущий баланс</th>
-        <th class="right">Прибыль $</th>
-        <th class="right">Доходность</th>
+        <th>Player</th>
+        <th class="right">Starting Balance</th>
+        <th class="right">Current Value</th>
+        <th class="right">Profit $</th>
+        <th class="right">Return</th>
       </tr>
     </thead>
     <tbody>
@@ -34,7 +34,7 @@
         </td>
         <td>
           <span class="username">{{ u.username }}</span>
-          {% if u.is_me %}<span class="badge-me">Вы</span>{% endif %}
+          {% if u.is_me %}<span class="badge-me">You</span>{% endif %}
         </td>
         <td class="right muted">$10,000.00</td>
         <td class="right">${{ '{:,.2f}'.format(u.total) }}</td>

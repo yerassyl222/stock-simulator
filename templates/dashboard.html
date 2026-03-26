@@ -1,30 +1,30 @@
 {% extends "base.html" %}
-{% block title %}Портфель — StockSim{% endblock %}
+{% block title %}Dashboard — StockSim{% endblock %}
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-  <h1>Мой портфель</h1>
+  <h1>My Dashboard</h1>
 </div>
 
 <!-- Stats grid -->
 <div class="stats-grid">
   <div class="stat-card">
-    <div class="stat-label">Наличные</div>
+    <div class="stat-label">Cash</div>
     <div class="stat-value">${{ '{:,.2f}'.format(cash) }}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">Стоимость акций</div>
+    <div class="stat-label">Stock Value</div>
     <div class="stat-value">${{ '{:,.2f}'.format(stocks_value) }}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">Общая стоимость</div>
+    <div class="stat-label">Total Value</div>
     <div class="stat-value">${{ '{:,.2f}'.format(total) }}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">Прибыль / Убыток</div>
+    <div class="stat-label">Profit / Loss</div>
     <div class="stat-value {{ 'positive' if pnl >= 0 else 'negative' }}">
       {{ '+' if pnl >= 0 else '' }}${{ '{:,.2f}'.format(pnl) }}
       <span class="stat-pct">({{ '+' if pnl_pct >= 0 else '' }}{{ '{:.2f}'.format(pnl_pct) }}%)</span>
@@ -35,7 +35,7 @@
 <!-- Chart -->
 <div class="card">
   <div class="card-header">
-    <h2>История стоимости портфеля</h2>
+    <h2>Portfolio Value History</h2>
   </div>
   <div class="chart-wrap">
     <canvas id="portfolioChart"></canvas>
@@ -46,17 +46,17 @@
 {% if top_holdings %}
 <div class="card">
   <div class="card-header">
-    <h2>Топ позиции</h2>
-    <a href="{{ url_for('portfolio') }}" class="card-link">Все позиции &rarr;</a>
+    <h2>Top Holdings</h2>
+    <a href="{{ url_for('portfolio') }}" class="card-link">All positions &rarr;</a>
   </div>
   <table class="data-table">
     <thead>
       <tr>
-        <th>Акция</th>
-        <th class="right">Кол-во</th>
-        <th class="right">Цена</th>
-        <th class="right">Стоимость</th>
-        <th class="right">П/У</th>
+        <th>Stock</th>
+        <th class="right">Shares</th>
+        <th class="right">Price</th>
+        <th class="right">Value</th>
+        <th class="right">P/L</th>
       </tr>
     </thead>
     <tbody>
@@ -80,8 +80,8 @@
 {% else %}
 <div class="empty-state">
   <div class="empty-icon">&#128200;</div>
-  <p>У вас пока нет акций.</p>
-  <a href="{{ url_for('market') }}" class="btn-primary">Перейти на рынок</a>
+  <p>You don't own any stocks yet.</p>
+  <a href="{{ url_for('market') }}" class="btn-primary">Go to Market</a>
 </div>
 {% endif %}
 {% endblock %}
@@ -102,7 +102,7 @@
     data: {
       labels,
       datasets: [{
-        label: 'Стоимость портфеля ($)',
+        label: 'Portfolio Value ($)',
         data: values,
         borderColor: '#388bfd',
         backgroundColor: gradient,

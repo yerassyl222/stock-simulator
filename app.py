@@ -38,7 +38,7 @@ app.secret_key = 'stock-sim-secret-change-in-prod-2024'
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-login_manager.login_message = 'Пожалуйста, войдите в систему.'
+login_manager.login_message = 'Please log in to access this page.'
 
 app.teardown_appcontext(close_db)
 
@@ -162,11 +162,11 @@ def login():
 
         if action == 'register':
             if len(username) < 3:
-                flash('Имя пользователя должно быть не менее 3 символов.', 'error')
+                flash('Username must be at least 3 characters.', 'error')
             elif len(password) < 4:
-                flash('Пароль должен быть не менее 4 символов.', 'error')
+                flash('Password must be at least 4 characters.', 'error')
             elif db.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone():
-                flash('Такое имя пользователя уже занято.', 'error')
+                flash('This username is already taken. Please choose another one.', 'error')
             else:
                 pw_hash = generate_password_hash(password, method='pbkdf2:sha256')
                 try:
@@ -184,7 +184,7 @@ def login():
                     # Seed history with starting balance
                     record_portfolio_value(user.id, db)
                     login_user(user)
-                    flash('Добро пожаловать! Вам начислено $10,000.', 'success')
+                    flash('Welcome! You have been credited $10,000 in virtual funds.', 'success')
                     return redirect(url_for('dashboard'))
 
         elif action == 'login':
@@ -194,7 +194,7 @@ def login():
                 login_user(user)
                 return redirect(url_for('dashboard'))
             else:
-                flash('Неверное имя пользователя или пароль.', 'error')
+                flash('Invalid username or password.', 'error')
 
     return render_template('login.html')
 
@@ -240,7 +240,7 @@ def dashboard():
     chart_data = [round(h['total_value'], 2) for h in history]
 
     if not chart_data:
-        chart_labels = ['Старт']
+        chart_labels = ['Start']
         chart_data = [10000.0]
 
     top_holdings = sorted(holdings_list, key=lambda x: x['value'], reverse=True)[:5]
@@ -480,19 +480,19 @@ def api_buy():
     try:
         shares = float(data.get('shares', 0))
     except (ValueError, TypeError):
-        return jsonify({'error': 'Некорректное количество акций'}), 400
+        return jsonify({'error': 'Invalid number of shares.'}), 400
 
     if shares <= 0:
-        return jsonify({'error': 'Количество должно быть больше 0'}), 400
+        return jsonify({'error': 'Number of shares must be greater than 0.'}), 400
     if ticker not in TICKERS:
-        return jsonify({'error': 'Тикер не найден'}), 400
+        return jsonify({'error': 'Ticker not found.'}), 400
 
     db = get_db()
     price_row = db.execute(
         'SELECT price FROM stock_prices WHERE ticker = ?', (ticker,)
     ).fetchone()
     if not price_row or not price_row['price']:
-        return jsonify({'error': 'Цена недоступна, попробуйте позже'}), 400
+        return jsonify({'error': 'Price unavailable, please try again later.'}), 400
 
     price = price_row['price']
     total_cost = price * shares
@@ -501,7 +501,7 @@ def api_buy():
         'SELECT cash_balance FROM users WHERE id = ?', (current_user.id,)
     ).fetchone()
     if user['cash_balance'] < total_cost:
-        return jsonify({'error': f'Недостаточно средств. Нужно ${total_cost:,.2f}, доступно ${user["cash_balance"]:,.2f}'}), 400
+        return jsonify({'error': f'Insufficient funds. Need ${total_cost:,.2f}, available ${user["cash_balance"]:,.2f}.'}), 400
 
     # Deduct cash
     db.execute(
@@ -537,7 +537,7 @@ def api_buy():
 
     return jsonify({
         'success': True,
-        'message': f'Куплено {shares:g} акций {ticker} по ${price:,.2f}',
+        'message': f'Bought {shares:g} share(s) of {ticker} at ${price:,.2f}.',
         'new_cash': db.execute('SELECT cash_balance FROM users WHERE id = ?', (current_user.id,)).fetchone()['cash_balance'],
     })
 
@@ -550,10 +550,10 @@ def api_sell():
     try:
         shares = float(data.get('shares', 0))
     except (ValueError, TypeError):
-        return jsonify({'error': 'Некорректное количество акций'}), 400
+        return jsonify({'error': 'Invalid number of shares.'}), 400
 
     if shares <= 0:
-        return jsonify({'error': 'Количество должно быть больше 0'}), 400
+        return jsonify({'error': 'Number of shares must be greater than 0.'}), 400
 
     db = get_db()
     holding = db.execute(
@@ -562,13 +562,13 @@ def api_sell():
     ).fetchone()
     if not holding or holding['shares'] < shares:
         owned = holding['shares'] if holding else 0
-        return jsonify({'error': f'Недостаточно акций. У вас {owned:g} шт.'}), 400
+        return jsonify({'error': f'Not enough shares. You own {owned:g}.'}), 400
 
     price_row = db.execute(
         'SELECT price FROM stock_prices WHERE ticker = ?', (ticker,)
     ).fetchone()
     if not price_row or not price_row['price']:
-        return jsonify({'error': 'Цена недоступна'}), 400
+        return jsonify({'error': 'Price unavailable.'}), 400
 
     price = price_row['price']
     proceeds = price * shares
@@ -601,7 +601,7 @@ def api_sell():
 
     return jsonify({
         'success': True,
-        'message': f'Продано {shares:g} акций {ticker} по ${price:,.2f}',
+        'message': f'Sold {shares:g} share(s) of {ticker} at ${price:,.2f}.',
         'new_cash': db.execute('SELECT cash_balance FROM users WHERE id = ?', (current_user.id,)).fetchone()['cash_balance'],
     })
 

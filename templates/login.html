@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StockSim — Вход</title>
+  <title>StockSim — Sign In</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body class="auth-body">
@@ -12,7 +12,7 @@
   <div class="auth-logo">
     <span class="logo-icon">&#9650;</span>
     <h1>StockSim</h1>
-    <p>Симулятор фондового рынка</p>
+    <p>Stock Market Simulator</p>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -22,37 +22,37 @@
   {% endwith %}
 
   <div class="auth-tabs">
-    <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Войти</button>
-    <button class="auth-tab" id="tabReg" onclick="switchTab('register')">Регистрация</button>
+    <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
+    <button class="auth-tab" id="tabReg" onclick="switchTab('register')">Register</button>
   </div>
 
   <!-- Login form -->
   <form method="POST" id="formLogin" class="auth-form">
     <input type="hidden" name="action" value="login" />
     <div class="form-group">
-      <label>Имя пользователя</label>
+      <label>Username</label>
       <input type="text" name="username" required autocomplete="username" placeholder="username" />
     </div>
     <div class="form-group">
-      <label>Пароль</label>
+      <label>Password</label>
       <input type="password" name="password" required autocomplete="current-password" placeholder="••••••" />
     </div>
-    <button type="submit" class="btn-primary btn-full">Войти</button>
+    <button type="submit" class="btn-primary btn-full">Sign In</button>
   </form>
 
   <!-- Register form -->
   <form method="POST" id="formRegister" class="auth-form hidden">
     <input type="hidden" name="action" value="register" />
     <div class="form-group">
-      <label>Имя пользователя</label>
+      <label>Username</label>
       <input type="text" name="username" required autocomplete="username" placeholder="username" />
     </div>
     <div class="form-group">
-      <label>Пароль</label>
+      <label>Password</label>
       <input type="password" name="password" required autocomplete="new-password" placeholder="••••••" />
     </div>
-    <p class="auth-note">После регистрации вы получите <strong>$10,000</strong> виртуальных долларов.</p>
-    <button type="submit" class="btn-primary btn-full">Зарегистрироваться</button>
+    <p class="auth-note">You will receive <strong>$10,000</strong> in virtual funds upon registration.</p>
+    <button type="submit" class="btn-primary btn-full">Create Account</button>
   </form>
 </div>
 
