@@ -1,5 +1,11 @@
 import json
+import sqlite3
 from datetime import datetime, timedelta
+
+try:
+    from psycopg2.errors import UniqueViolation as _PgUniqueViolation
+except ImportError:
+    _PgUniqueViolation = type('_Never', (Exception,), {})
 
 
 def _parse_dt(value):
@@ -163,18 +169,23 @@ def login():
                 flash('Такое имя пользователя уже занято.', 'error')
             else:
                 pw_hash = generate_password_hash(password, method='pbkdf2:sha256')
-                db.execute(
-                    'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-                    (username, pw_hash),
-                )
-                db.commit()
-                row = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-                user = User(row['id'], row['username'], row['cash_balance'])
-                # Seed history with starting balance
-                record_portfolio_value(user.id, db)
-                login_user(user)
-                flash('Добро пожаловать! Вам начислено $10,000.', 'success')
-                return redirect(url_for('dashboard'))
+                try:
+                    db.execute(
+                        'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                        (username, pw_hash),
+                    )
+                    db.commit()
+                except (sqlite3.IntegrityError, _PgUniqueViolation):
+                    db.rollback()
+                    flash('This username is already taken. Please choose another one.', 'error')
+                else:
+                    row = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+                    user = User(row['id'], row['username'], row['cash_balance'])
+                    # Seed history with starting balance
+                    record_portfolio_value(user.id, db)
+                    login_user(user)
+                    flash('Добро пожаловать! Вам начислено $10,000.', 'success')
+                    return redirect(url_for('dashboard'))
 
         elif action == 'login':
             row = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
