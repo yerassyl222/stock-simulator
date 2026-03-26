@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — StockSim</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .admin-header h1 { font-size: 1.15rem; font-weight: 700; }
+    .admin-header span { color: var(--text-muted); font-size: .85rem; }
+
+    .admin-body { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .admin-login {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
+    }
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      width: 100%; max-width: 360px;
+    }
+    .login-box h2 { margin-bottom: 1.25rem; font-size: 1.2rem; }
+    .login-box .lock { font-size: 2rem; display: block; margin-bottom: .75rem; }
+
+    .error-msg {
+      background: rgba(248,81,73,.12);
+      border: 1px solid rgba(248,81,73,.3);
+      color: var(--red);
+      padding: .6rem .9rem;
+      border-radius: 6px;
+      font-size: .88rem;
+      margin-bottom: 1rem;
+    }
+
+    .admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+
+    .admin-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.3rem;
+    }
+    .admin-card .label { font-size: .78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .3rem; }
+    .admin-card .value { font-size: 1.6rem; font-weight: 700; }
+    .admin-card .sub   { font-size: .82rem; color: var(--text-muted); margin-top: .2rem; }
+
+    .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+
+    .rank-num { font-weight: 700; color: var(--text-muted); width: 1.5rem; display: inline-block; }
+    .rank-bar-wrap { flex: 1; background: var(--surface2); border-radius: 3px; height: 6px; margin: 0 .75rem; }
+    .rank-bar { height: 6px; border-radius: 3px; background: var(--blue); }
+    .rank-row {
+      display: flex; align-items: center;
+      padding: .55rem 0;
+      border-bottom: 1px solid rgba(48,54,61,.5);
+      font-size: .9rem;
+    }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-count { font-size: .82rem; color: var(--text-muted); white-space: nowrap; }
+
+    @media (max-width: 640px) {
+      .admin-grid { grid-template-columns: 1fr; }
+      .admin-stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+{% if not authenticated %}
+<!-- ── Login ─────────────────────────────────────────────── -->
+<div class="admin-login">
+  <div class="login-box">
+    <span class="lock">&#128274;</span>
+    <h2>Admin Access</h2>
+    {% if error %}
+      <div class="error-msg">{{ error }}</div>
+    {% endif %}
+    <form method="POST">
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" autofocus placeholder="••••••••" />
+      </div>
+      <button type="submit" class="btn-primary btn-full">Enter</button>
+    </form>
+  </div>
+</div>
+
+{% else %}
+<!-- ── Dashboard ─────────────────────────────────────────── -->
+<div class="admin-header">
+  <h1>&#9878; StockSim Admin</h1>
+  <span>
+    <a href="{{ url_for('index') }}" style="color:var(--text-muted);margin-right:1rem;">&larr; Back to app</a>
+    <a href="{{ url_for('admin') }}?logout=1" class="btn-logout">Logout</a>
+  </span>
+</div>
+
+<div class="admin-body">
+
+  <!-- Stats row 1: users -->
+  <h2 style="margin-bottom:.75rem;font-size:1rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Users</h2>
+  <div class="admin-stats" style="margin-bottom:1.5rem;">
+    <div class="admin-card">
+      <div class="label">Total users</div>
+      <div class="value">{{ total_users }}</div>
+    </div>
+    <div class="admin-card">
+      <div class="label">New today</div>
+      <div class="value" style="color:var(--green)">{{ new_today }}</div>
+    </div>
+    <div class="admin-card">
+      <div class="label">New this week</div>
+      <div class="value">{{ new_week }}</div>
+    </div>
+    <div class="admin-card">
+      <div class="label">Virtual money in circulation</div>
+      <div class="value" style="font-size:1.25rem;">${{ '{:,.0f}'.format(total_in_circulation) }}</div>
+      <div class="sub">cash + stock holdings</div>
+    </div>
+  </div>
+
+  <!-- Stats row 2: transactions -->
+  <h2 style="margin-bottom:.75rem;font-size:1rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Transactions</h2>
+  <div class="admin-stats" style="margin-bottom:1.5rem;">
+    <div class="admin-card">
+      <div class="label">Total buys</div>
+      <div class="value" style="color:var(--green)">{{ buys }}</div>
+    </div>
+    <div class="admin-card">
+      <div class="label">Total sells</div>
+      <div class="value" style="color:var(--red)">{{ sells }}</div>
+    </div>
+    <div class="admin-card">
+      <div class="label">All transactions</div>
+      <div class="value">{{ buys + sells }}</div>
+    </div>
+    <div class="admin-card">
+      <div class="label">Buy / Sell ratio</div>
+      <div class="value" style="font-size:1.25rem;">
+        {% if sells > 0 %}{{ '{:.1f}'.format(buys / sells) }}x{% else %}—{% endif %}
+      </div>
+      <div class="sub">buys per sell</div>
+    </div>
+  </div>
+
+  <!-- Top users + Top stocks -->
+  <div class="admin-grid">
+
+    <div class="card">
+      <div class="card-header"><h2>Most Active Users</h2><span class="muted">by transactions</span></div>
+      <div style="padding:.5rem 1.2rem 1rem;">
+        {% if top_users %}
+          {% set max_cnt = top_users[0].cnt %}
+          {% for u in top_users %}
+          <div class="rank-row">
+            <span class="rank-num">{{ loop.index }}</span>
+            <span style="flex:0 0 auto;min-width:8rem;">{{ u.username }}</span>
+            <div class="rank-bar-wrap">
+              <div class="rank-bar" style="width:{{ (u.cnt / max_cnt * 100)|int }}%"></div>
+            </div>
+            <span class="rank-count">{{ u.cnt }} tx</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="muted" style="padding:.75rem 0;">No transactions yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Most Popular Stocks</h2><span class="muted">by purchases</span></div>
+      <div style="padding:.5rem 1.2rem 1rem;">
+        {% if top_stocks %}
+          {% set max_cnt = top_stocks[0].cnt %}
+          {% for s in top_stocks %}
+          <div class="rank-row">
+            <span class="rank-num">{{ loop.index }}</span>
+            <span class="ticker-badge">{{ s.ticker }}</span>
+            <div class="rank-bar-wrap">
+              <div class="rank-bar" style="width:{{ (s.cnt / max_cnt * 100)|int }};background:var(--green)"></div>
+            </div>
+            <span class="rank-count">{{ s.cnt }} buys</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="muted" style="padding:.75rem 0;">No purchases yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- All users table -->
+  <div class="card">
+    <div class="card-header">
+      <h2>All Users</h2>
+      <span class="muted">{{ total_users }} total</span>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Registered</th>
+          <th class="right">Cash</th>
+          <th class="right">Portfolio value</th>
+          <th class="right">P/L %</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users_list %}
+        <tr>
+          <td><span class="username">{{ u.username }}</span></td>
+          <td class="muted">{{ u.registered }}</td>
+          <td class="right">${{ '{:,.2f}'.format(u.cash) }}</td>
+          <td class="right">${{ '{:,.2f}'.format(u.total) }}</td>
+          <td class="right {{ 'positive' if u.pnl_pct >= 0 else 'negative' }}">
+            {{ '+' if u.pnl_pct >= 0 else '' }}{{ '{:.2f}'.format(u.pnl_pct) }}%
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="muted" style="text-align:center;padding:2rem;">No users yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endif %}
+
+</body>
+</html>

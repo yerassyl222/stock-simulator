@@ -1,6 +1,6 @@
 import json
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 try:
     from psycopg2.errors import UniqueViolation as _PgUniqueViolation
@@ -23,7 +23,7 @@ def _fmt_dt(value):
         return value.strftime('%Y-%m-%d %H:%M')
     return ''
 
-from flask import Flask, render_template, redirect, url_for, request, jsonify, flash
+from flask import Flask, render_template, redirect, url_for, request, jsonify, flash, session
 from flask_login import (
     LoginManager, login_user, logout_user,
     login_required, current_user, UserMixin,
@@ -323,6 +323,132 @@ def leaderboard():
 
     board.sort(key=lambda x: x['pnl_pct'], reverse=True)
     return render_template('leaderboard.html', board=board)
+
+
+# ---------------------------------------------------------------------------
+# Admin dashboard
+# ---------------------------------------------------------------------------
+
+ADMIN_PASSWORD = 'admin123'
+
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    # Logout
+    if request.args.get('logout'):
+        session.pop('admin_ok', None)
+        return redirect(url_for('admin'))
+
+    # Login attempt
+    error = None
+    if request.method == 'POST':
+        if request.form.get('password') == ADMIN_PASSWORD:
+            session['admin_ok'] = True
+        else:
+            error = 'Incorrect password.'
+
+    if not session.get('admin_ok'):
+        return render_template('admin.html', authenticated=False, error=error)
+
+    db = get_db()
+    today     = date.today()
+    week_ago  = today - timedelta(days=7)
+
+    # User counts
+    total_users = db.execute(
+        'SELECT COUNT(*) AS cnt FROM users'
+    ).fetchone()['cnt']
+
+    new_today = db.execute(
+        'SELECT COUNT(*) AS cnt FROM users WHERE created_at >= ?',
+        (today.isoformat(),),
+    ).fetchone()['cnt']
+
+    new_week = db.execute(
+        'SELECT COUNT(*) AS cnt FROM users WHERE created_at >= ?',
+        (week_ago.isoformat(),),
+    ).fetchone()['cnt']
+
+    # Transaction counts by type
+    buys = sells = 0
+    for row in db.execute(
+        'SELECT type, COUNT(*) AS cnt FROM transactions GROUP BY type'
+    ).fetchall():
+        if row['type'] == 'buy':
+            buys = row['cnt']
+        elif row['type'] == 'sell':
+            sells = row['cnt']
+
+    # Top 5 most active users
+    top_users = [dict(r) for r in db.execute('''
+        SELECT u.username, COUNT(t.id) AS cnt
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        GROUP BY u.id, u.username
+        ORDER BY cnt DESC
+        LIMIT 5
+    ''').fetchall()]
+
+    # Top 5 most purchased stocks
+    top_stocks = [dict(r) for r in db.execute('''
+        SELECT ticker, COUNT(*) AS cnt
+        FROM transactions
+        WHERE type = 'buy'
+        GROUP BY ticker
+        ORDER BY cnt DESC
+        LIMIT 5
+    ''').fetchall()]
+
+    # Total virtual money in circulation (cash + stock holdings)
+    total_cash = db.execute(
+        'SELECT COALESCE(SUM(cash_balance), 0) AS s FROM users'
+    ).fetchone()['s'] or 0
+
+    total_stocks_value = db.execute('''
+        SELECT COALESCE(SUM(h.shares * sp.price), 0) AS s
+        FROM holdings h
+        JOIN stock_prices sp ON h.ticker = sp.ticker
+        WHERE h.shares > 0
+    ''').fetchone()['s'] or 0
+
+    total_in_circulation = total_cash + total_stocks_value
+
+    # All users with portfolio value
+    prices = {
+        r['ticker']: r['price']
+        for r in db.execute('SELECT ticker, price FROM stock_prices').fetchall()
+    }
+    users_list = []
+    for u in db.execute(
+        'SELECT id, username, cash_balance, created_at FROM users ORDER BY created_at DESC'
+    ).fetchall():
+        holdings = db.execute(
+            'SELECT ticker, shares FROM holdings WHERE user_id = ? AND shares > 0',
+            (u['id'],),
+        ).fetchall()
+        stocks_val = sum(h['shares'] * (prices.get(h['ticker']) or 0) for h in holdings)
+        total = u['cash_balance'] + stocks_val
+        reg = u['created_at']
+        users_list.append({
+            'username':   u['username'],
+            'registered': reg.strftime('%Y-%m-%d') if hasattr(reg, 'strftime') else str(reg)[:10],
+            'cash':       u['cash_balance'],
+            'total':      total,
+            'pnl_pct':    (total - 10_000) / 10_000 * 100,
+        })
+
+    return render_template('admin.html',
+        authenticated       = True,
+        total_users         = total_users,
+        new_today           = new_today,
+        new_week            = new_week,
+        buys                = buys,
+        sells               = sells,
+        top_users           = top_users,
+        top_stocks          = top_stocks,
+        total_in_circulation= total_in_circulation,
+        users_list          = users_list,
+    )
 
 
 # ---------------------------------------------------------------------------
