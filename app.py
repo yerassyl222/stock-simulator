@@ -133,8 +133,8 @@ def calc_portfolio(user_id, db):
         })
 
     total = cash + stocks_value
-    pnl = total - 10_000
-    pnl_pct = pnl / 10_000 * 100
+    pnl = total - 1_000_000_000
+    pnl_pct = pnl / 1_000_000_000 * 100
     return cash, stocks_value, total, pnl, pnl_pct, holdings_list
 
 
@@ -241,7 +241,7 @@ def dashboard():
 
     if not chart_data:
         chart_labels = ['Start']
-        chart_data = [10000.0]
+        chart_data = [1000000000.0]
 
     top_holdings = sorted(holdings_list, key=lambda x: x['value'], reverse=True)[:5]
 
@@ -311,8 +311,8 @@ def leaderboard():
         ).fetchall()
         stocks_val = sum(h['shares'] * prices.get(h['ticker'], 0) for h in holdings)
         total = u['cash_balance'] + stocks_val
-        pnl = total - 10_000
-        pnl_pct = pnl / 10_000 * 100
+        pnl = total - 1_000_000_000
+        pnl_pct = pnl / 1_000_000_000 * 100
         board.append({
             'username': u['username'],
             'total': total,
@@ -329,7 +329,7 @@ def leaderboard():
 # Admin dashboard
 # ---------------------------------------------------------------------------
 
-ADMIN_PASSWORD = 'admin123'
+ADMIN_PASSWORDS = {'admin123', 'alua123!'}
 
 
 @app.route('/admin', methods=['GET', 'POST'])
@@ -342,7 +342,7 @@ def admin():
     # Login attempt
     error = None
     if request.method == 'POST':
-        if request.form.get('password') == ADMIN_PASSWORD:
+        if request.form.get('password') in ADMIN_PASSWORDS:
             session['admin_ok'] = True
         else:
             error = 'Incorrect password.'
@@ -434,7 +434,7 @@ def admin():
             'registered': reg.strftime('%Y-%m-%d') if hasattr(reg, 'strftime') else str(reg)[:10],
             'cash':       u['cash_balance'],
             'total':      total,
-            'pnl_pct':    (total - 10_000) / 10_000 * 100,
+            'pnl_pct':    (total - 1_000_000_000) / 1_000_000_000 * 100,
         })
 
     return render_template('admin.html',
